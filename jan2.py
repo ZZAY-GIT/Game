@@ -2,7 +2,8 @@ import pygame
 
 # Initialize pygame and set up the game window
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+width, height = 800, 600
+screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Arkanoid")
 
 
@@ -22,7 +23,7 @@ class Ball:
         self.x += self.dx
         self.y += self.dy
 
-        if self.x + self.radius > 800 or self.x - self.radius < 0:
+        if self.x + self.radius > width or self.x - self.radius < 0:
             self.dx = -self.dx
         if self.y - self.radius < 0:
             self.dy = -self.dy
@@ -54,10 +55,12 @@ class Paddle:
         pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.width, self.height))
 
     def move_left(self):
-        self.x -= self.speed
+        if self.x >= 0:
+            self.x -= self.speed
 
     def move_right(self):
-        self.x += self.speed
+        if self.x <= width - self.width:
+            self.x += self.speed
 
 
 class Brick:
@@ -72,6 +75,7 @@ class Brick:
     def draw(self, screen):
         if not self.destroyed:
             pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+            pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.width, self.height), 1)
 
     def hit(self):
         self.destroyed = True
@@ -86,9 +90,9 @@ def create_bricks():
     x_pos = 0
     y_pos = 50
     for i in range(3):
-        for j in range(10):
-            bricks.append(Brick(x_pos, y_pos, 75, 25, colors[i]))
-            x_pos += 75
+        for j in range(width//50):
+            bricks.append(Brick(x_pos, y_pos, 50, 25, colors[i]))
+            x_pos += 50
         x_pos = 0
         y_pos += 25
     return bricks
@@ -133,6 +137,6 @@ while running:
         brick.draw(screen)
 
     pygame.display.update()
-    clock.tick(144)
+    clock.tick(60)
 # Clean up and exit
 pygame.quit()
