@@ -1,14 +1,5 @@
+import sys
 import pygame
-import pygame.mixer
-import random
-
-pygame.mixer.init()
-pygame.init()
-width, height = 800, 600
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Арканоид")
-# СКАЧАЙ ЗВУК
-collision_sound = pygame.mixer.Sound("123.mp3")
 
 
 # класс мячика
@@ -95,6 +86,35 @@ def create_bricks():
         y_pos += 25
 
 
+class Button:
+    def __init__(self, text, font, pos, color, changed_color):
+        self.text = text
+        self.font = font
+        self.x, self.y = pos
+        self.color, self.changed_color = color, changed_color
+        self.result_text = self.font.render(self.text, True, self.color)
+        self.rect = self.result_text.get_rect(center=(self.x, self.y))
+        self.text_of_rect = self.result_text.get_rect(center=(self.x, self.y))
+
+    def check(self, pos):
+        x, y = pos
+        if self.rect.left <= x <= self.rect.right and self.rect.top <= y <= self.rect.bottom:
+            return True
+        return False
+
+    def change(self, pos):
+        x, y = pos
+        if self.rect.left <= x <= self.rect.right and self.rect.top <= y <= self.rect.bottom:
+            self.result_text = self.font.render(self.text, True, self.changed_color)
+        else:
+            self.result_text = self.font.render(self.text, True, self.color)
+
+
+pygame.init()
+pygame.mixer.init()
+size = width, height = 800, 600
+screen = pygame.display.set_mode(size)
+collision_sound = pygame.mixer.Sound("123.mp3")
 # создаём шарик, платформу и кирпичи
 all_sprites = pygame.sprite.Group()
 paddle = pygame.sprite.Group()
@@ -102,40 +122,70 @@ ball = Ball(7, 400, 280)
 paddle.add(Paddle(350, 510, 100, 10, (255, 255, 255)))
 bricks = pygame.sprite.Group()
 create_bricks()
-
-# Add the sprites to the group
+# Добавляем спрайты
 all_sprites.add(ball, bricks, paddle)
 clock = pygame.time.Clock()
-moving = False
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            moving = True
-        if event.type == pygame.MOUSEBUTTONUP:
-            moving = False
 
-    all_sprites.draw(screen)
-    ball.update()
-    # передвижение платформы клавишами
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        paddle.update('left')
-    if keys[pygame.K_RIGHT]:
-        paddle.update('right')
+def play():
+    pygame.display.set_caption("Арканоид")
+    running = True
+    moving = False
+    while running:
+        screen.blit(pygame.image.load("fon_3.jpg"), (0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                moving = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                moving = False
 
-    # передвижение платформы мышью
-    if moving:
-        for i in paddle:
-            mouse_x, _ = pygame.mouse.get_pos()
-            i.rect.x = mouse_x - i.width // 2
-    # проверка кубиков
+        all_sprites.draw(screen)
+        ball.update()
+        # передвижение платформы клавишами
 
-    pygame.display.update()
-    screen.fill('black')
-    clock.tick(60)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            paddle.update('left')
+        if keys[pygame.K_RIGHT]:
+            paddle.update('right')
 
-pygame.quit()
+        # передвижение платформы мышью
+        if moving:
+            for i in paddle:
+                mouse_x, _ = pygame.mouse.get_pos()
+                i.rect.x = mouse_x - i.width // 2
+        pygame.display.flip()
+    pygame.quit()
+    sys.exit()
+
+
+def main_menu():
+    pygame.display.set_caption("Меню")
+    running = True
+    while running:
+        screen.blit(pygame.image.load("fon_2.jpg"), (0, 0))
+        play_b = Button("ИГРАТЬ", pygame.font.Font(None, 75), (200, 300), "white", "green")
+        exit_b = Button("ВЫЙТИ", pygame.font.Font(None, 75), (600, 300), "white", "red")
+        text_of_menu = pygame.font.Font(None, 100).render("МЕНЮ", True, "white")
+        rect_of_menu = text_of_menu.get_rect(center=(400, 100))
+        screen.blit(text_of_menu, rect_of_menu)
+        pos = pygame.mouse.get_pos()
+        play_b.change(pos)
+        screen.blit(play_b.result_text, play_b.text_of_rect)
+        exit_b.change(pos)
+        screen.blit(exit_b.result_text, exit_b.text_of_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if play_b.check(pos):
+                    play()
+                if exit_b.check(pos):
+                    running = False
+        pygame.display.flip()
+    pygame.quit()
+    sys.exit()
+
+main_menu()
