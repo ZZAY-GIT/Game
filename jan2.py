@@ -7,8 +7,8 @@ pygame.init()
 width, height = 800, 600
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Арканоид")
-#СКАЧАЙ ЗВУК
-№collision_sound = pygame.mixer.Sound("123.mp3")
+# СКАЧАЙ ЗВУК
+collision_sound = pygame.mixer.Sound("123.mp3")
 
 
 # класс мячика
@@ -21,8 +21,11 @@ class Ball(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, pygame.Color("white"),
                            (radius, radius), radius)
         self.rect = pygame.Rect(x, y, 2 * radius, 2 * radius)
-        self.vx = 2
-        self.vy = -2
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.vx = 4
+        self.vy = -4
 
     def update(self):
         if 0 <= self.rect.x + self.vx <= width - self.radius:
@@ -33,6 +36,12 @@ class Ball(pygame.sprite.Sprite):
             self.vy = -self.vy
         if pygame.sprite.spritecollideany(self, paddle):
             self.vy = -self.vy
+            for i in paddle:
+                paddle_center = i.rect.x + (i.rect.width / 2)
+                ball_center = self.rect.x + self.radius / 2
+                offset = (ball_center - paddle_center) / (i.rect.width / 2)
+
+                self.vx = offset * 5
         if pygame.sprite.spritecollide(self, bricks, True):
             collision_sound.play()
             self.vy = -self.vy
@@ -71,9 +80,6 @@ class Brick(pygame.sprite.Sprite):
         self.width = width
         self.height = height
         self.color = color
-
-    def update(self):
-        pass
 
 
 # создание кирпичей
@@ -127,8 +133,6 @@ while running:
             mouse_x, _ = pygame.mouse.get_pos()
             i.rect.x = mouse_x - i.width // 2
     # проверка кубиков
-
-
 
     pygame.display.update()
     screen.fill('black')
