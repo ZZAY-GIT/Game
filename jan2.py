@@ -1,86 +1,138 @@
-from random import randrange
 import pygame
-import math
 
-def speed_reversal(vx, vy, ball, rect):
-    if vx > 0:
-        delta_x = ball.right - rect.left
-    else:
-        delta_x = rect.right - ball.left
-    if vy > 0:
-        delta_y = ball.bottom - rect.top
-    else:
-        delta_y = rect.bottom - ball.top
-    if delta_x == delta_y:
-        vx, vy = -vx, -vy
-    elif delta_x > delta_y:
-        vy = -vy
-    elif delta_y > delta_x:
-        vx = -vx
-    return vx, vy
-
-size = width, height = 1200, 800
-width_of_plat = 330
-height_of_plat = 35
-speed_of_plat = 15
-plat = pygame.Rect(width // 2 - width_of_plat // 2, (height - height_of_plat) % height, width_of_plat, height_of_plat)
-radius_of_ball = 20
-speed_of_ball = 6
-rect_of_ball = int(math.sqrt(2) * radius_of_ball)
-ball = pygame.Rect(width // 2, height // 2, rect_of_ball, rect_of_ball)
-
-blocks = [pygame.Rect(120 * i, 70 * j, 120, 70) for i in range(10) for j in range(4)]
-color_of_blocks = [(randrange(30, 256), randrange(30, 256), randrange(30, 256)) for i in range(10) for j in range(4)]
-
-vx, vy = 1, -1
-
+# Initialize pygame and set up the game window
 pygame.init()
-screen = pygame.display.set_mode(size)
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Arkanoid")
+
+
+class Ball:
+    def __init__(self, x, y, radius, speed):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.speed = speed
+        self.dx = speed
+        self.dy = -speed
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, (255, 255, 255), (self.x, self.y), self.radius)
+
+    def move(self):
+        self.x += self.dx
+        self.y += self.dy
+
+        if self.x + self.radius > 800 or self.x - self.radius < 0:
+            self.dx = -self.dx
+        if self.y - self.radius < 0:
+            self.dy = -self.dy
+
+    def collides_with(self, obj):
+        if isinstance(obj, Paddle):
+            if (self.x > obj.x and self.x < obj.x + obj.width) and (self.y + self.radius > obj.y):
+                return True
+        elif isinstance(obj, Brick):
+            if (self.x + self.radius > obj.x) and (self.x - self.radius < obj.x + obj.width) and (
+                    self.y + self.radius > obj.y) and (self.y - self.radius < obj.y + obj.height):
+                return True
+        else:
+            return False
+
+    def bounce(self):
+        self.dy = -self.dy
+
+
+class Paddle:
+    def __init__(self, x, y, width, height, speed):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.speed = speed
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.width, self.height))
+
+    def move_left(self):
+        self.x -= self.speed
+
+    def move_right(self):
+        self.x += self.speed
+
+
+class Brick:
+    def __init__(self, x, y, width, height, color):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.color = color
+        self.destroyed = False
+
+    def draw(self, screen):
+        if not self.destroyed:
+            pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    def hit(self):
+        self.destroyed = True
+
+    def is_destroyed(self):
+        return self.destroyed
+
+
+def create_bricks():
+    bricks = []
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    x_pos = 0
+    y_pos = 50
+    for i in range(3):
+        for j in range(10):
+            bricks.append(Brick(x_pos, y_pos, 75, 25, colors[i]))
+            x_pos += 75
+        x_pos = 0
+        y_pos += 25
+    return bricks
+
+
+# Create the ball, paddle, and bricks
+ball = Ball(400, 280, 5, 2)
+paddle = Paddle(350, 500, 100, 10, 5)
+bricks = create_bricks()
+
 clock = pygame.time.Clock()
-
-
-while True:
-    # обработка событий
+# Main game loop
+running = True
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            exit()
-    screen.fill('black')
-    pygame.draw.circle(screen, 'white', ball.center, radius_of_ball)
-    pygame.draw.rect(screen, 'red', plat)
-    for num in range(len(blocks)):
-        pygame.draw.rect(screen, color_of_blocks[num], blocks[num])
-    # движение шара
-    ball.x += vx * speed_of_ball
-    ball.y += vy * speed_of_ball
-    # столкновение с правой и левой границей
-    if ball.center[0] - radius_of_ball < 0 or ball.center[0] + radius_of_ball > width:
-        vx = -vx
-    # столкновение с верхней границей
-    if ball.center[1] - radius_of_ball < 0:
-        vy = -vy
-    # столкновение с платформой
-    if ball.colliderect(plat) and vy > 0:
-        vx, vy = speed_reversal(vx, vy, ball, plat)
-    # столкновение с блоками
-    index = ball.collidelist(blocks)
-    if index != -1:
-        color = color_of_blocks.pop(index)
-        rect = blocks.pop(index)
-        vx, vy = speed_reversal(vx, vy, ball, rect)
-        # !!!! нужно придумать, что будет после столкновения шарика и блока !!!!
-        # rect.inflate_ip(ball.width * 3, ball.height * 3)
-        # pygame.draw.rect(screen, color, rect)
-    # !!!! нужно придумать, что будет после выигрыша и проигрыша !!!!
-    if ball.bottom > height:
-        print('GAME OVER!')
-        exit()
-    elif not len(blocks):
-        print('WIN!!!')
-        exit()
-    key = pygame.key.get_pressed()
-    if key[pygame.K_RIGHT] and plat.right < width:
-        plat.right += speed_of_plat
-    if key[pygame.K_LEFT] and plat.left > 0:
-        plat.left -= speed_of_plat
-    pygame.display.flip()
-    clock.tick(60)
+            running = False
+
+    # Move the paddle based on user input
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        paddle.move_left()
+    if keys[pygame.K_RIGHT]:
+        paddle.move_right()
+
+    # Move the ball and check for collisions
+    ball.move()
+    if ball.collides_with(paddle):
+        ball.bounce()
+    for brick in bricks:
+        if ball.collides_with(brick):
+            ball.bounce()
+            brick.hit()
+            if brick.is_destroyed():
+                bricks.remove(brick)
+
+    # Draw the game elements to the screen
+    screen.fill((0, 0, 0))
+    ball.draw(screen)
+    paddle.draw(screen)
+    for brick in bricks:
+        brick.draw(screen)
+
+    pygame.display.update()
+    clock.tick(144)
+# Clean up and exit
+pygame.quit()
