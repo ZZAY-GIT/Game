@@ -264,6 +264,9 @@ def level_select():
         button1 = Button(buttons[0], pygame.font.Font(None, 50), (200 + 200 * 0, 200), color, color_changed)
         button1.change(pos)
         screen.blit(button1.result_text, button1.text_of_rect)
+        main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
+        main_menu_b.change(pos)
+        screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
         if passed_levels == 0:
             color = 'red'
             color_changed = color
@@ -295,22 +298,31 @@ def level_select():
                 if button1.check(pos):
                     play(0)
                     current_level = 0
+                    running = False
                 if button2.check(pos):
                     if passed_levels > 0:
                         play(1)
                         current_level = 1
+                        running = False
                 if button3.check(pos):
                     if passed_levels > 1:
                         play(2)
                         current_level = 2
+                        running = False
                 if button4.check(pos):
                     if passed_levels > 2:
                         play(3)
                         current_level = 3
+                        running = False
                 if button5.check(pos):
                     if passed_levels > 3:
                         play(4)
                         current_level = 4
+                        running = False
+
+                if main_menu_b.check(pos):
+                    main_menu()
+                    running = False
         pygame.display.flip()
 
 
