@@ -1,15 +1,15 @@
 import random
 import sys
 import pygame
+import os
 
-passed_levels = 2
-enter_count = 0
+
 pygame.init()
 pygame.mixer.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 all_sprites = pygame.sprite.Group()
-collision_sound = pygame.mixer.Sound("123.mp3")
+collision_sound = pygame.mixer.Sound("data\\123.mp3")
 
 
 # класс мячика
@@ -17,10 +17,9 @@ class Ball(pygame.sprite.Sprite):
     def __init__(self, radius, x, y):
         super().__init__(all_sprites)
         self.radius = radius
-        self.image = pygame.Surface((2 * radius, 2 * radius),
-                                    pygame.SRCALPHA, 32)
-        pygame.draw.circle(self.image, pygame.Color("white"),
-                           (radius, radius), radius)
+        self.image = pygame.image.load('data\\ball.png').convert_alpha()
+        self.image.set_colorkey((255, 255, 255))
+        self.image = pygame.transform.scale(self.image, (20, 20))
         self.rect = pygame.Rect(x, y, 2 * radius, 2 * radius)
         self.x = x
         self.y = y
@@ -28,7 +27,7 @@ class Ball(pygame.sprite.Sprite):
         self.vx = 8
         self.vy = -8
 
-    def update(self):
+    def update(self, bricks):
         if 0 <= self.rect.x + self.vx <= width - self.radius:
             self.rect = self.rect.move(self.vx, self.vy)
         else:
@@ -50,10 +49,10 @@ class Ball(pygame.sprite.Sprite):
 
 # класс платформы
 class Paddle(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color):
+    def __init__(self, x, y, width, height):
         super().__init__(all_sprites)
-        self.image = pygame.Surface((width, height))
-        self.image.fill(color)
+        self.image = pygame.image.load('data\\paddle.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (150, 30))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -62,53 +61,40 @@ class Paddle(pygame.sprite.Sprite):
 
     def update(self, direction):
         if direction == 'right':
-            if self.rect.x + 5 <= width - self.width:
-                self.rect = self.rect.move(5, 0)
+            if self.rect.x + 10 <= width - self.width:
+                self.rect = self.rect.move(10, 0)
         else:
-            if self.rect.x - 5 >= 0:
-                self.rect = self.rect.move(-5, 0)
+            if self.rect.x - 10 >= 0:
+                self.rect = self.rect.move(-10, 0)
 
 
 # класс кирпича
 class Brick(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, color):
+    def __init__(self, x, y, width, height, image):
         super().__init__(all_sprites)
-        self.image = pygame.Surface((width, height))
-        self.image.fill(color)
+        self.image = pygame.image.load(image).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (50, 30))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.width = width
         self.height = height
-        self.color = color
 
 
 # создание кирпичей
-def create_bricks():
-    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    x_pos = 50
-    y_pos = 50
-    for i in range(3):
-        for j in range((width - 100) // 50):
-            bricks.add(Brick(x_pos, y_pos, 50, 25, colors[i]))
-            x_pos += 50
-        x_pos = 50
-        y_pos += 25
-
-
-def generate_level(level_number):
-    bricks = []
-    if level_number == 1:
-        for i in range(10):
-            x = random.randint(0, 500)
-            y = random.randint(0, 100)
-            bricks.append(Brick(x, y))
-    elif level_number == 2:
-        for i in range(20):
-            x = random.randint(0, 500)
-            y = random.randint(0, 200)
-            bricks.append(Brick(x, y))
-    return bricks
+def create_bricks(level, bricks):
+    images = ['data\\brick1.png', 'data\\brick2.png', 'data\\brick3.png', 'data\\brick4.png']
+    bricks_coords = []
+    x_coords = list(range(50, 750, 50))
+    y_coords = list(range(50, 170, 30))
+    for i in range(31 + (level + 1) * 5):
+        x_pos = random.choice(x_coords)
+        y_pos = random.choice(y_coords)
+        while (x_pos, y_pos) in bricks_coords:
+            x_pos = random.choice(x_coords)
+            y_pos = random.choice(y_coords)
+        bricks_coords.append((x_pos, y_pos))
+        bricks.add(Brick(x_pos, y_pos, 50, 30, random.choice(images)))
 
 
 class Button:
@@ -135,12 +121,18 @@ class Button:
             self.result_text = self.font.render(self.text, True, self.color)
 
 
-def play():
+def play(level):
     pygame.display.set_caption("Арканоид")
     running = True
     moving = False
+    bricks = pygame.sprite.Group()
+    create_bricks(level, bricks)
+    all_sprites.add(ball, bricks, paddle)
     while running:
-        screen.blit(pygame.image.load("fon_3.jpg"), (0, 0))
+        screen.blit(pygame.image.load("data\\fon_3.jpg"), (0, 0))
+        font = pygame.font.Font(None, 50)
+        text1 = font.render('', True, (255, 255, 255))
+        screen.blit(text1, (25, 100))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -150,7 +142,7 @@ def play():
                 moving = False
 
         all_sprites.draw(screen)
-        ball.update()
+        ball.update(bricks)
         # передвижение платформы клавишами
 
         keys = pygame.key.get_pressed()
@@ -177,9 +169,8 @@ def level_select():
     while running:
         color = 'white'
         color_changed = 'green'
-
         pos = pygame.mouse.get_pos()
-        screen.blit(pygame.image.load('fon_2.jpg'), (0, 0))
+        screen.blit(pygame.image.load('data\\fon_2.jpg'), (0, 0))
         button1 = Button(buttons[0], pygame.font.Font(None, 50), (200 + 200 * 0, 200), color, color_changed)
         button1.change(pos)
         screen.blit(button1.result_text, button1.text_of_rect)
@@ -212,20 +203,47 @@ def level_select():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button1.check(pos):
-                    play()
+                    play(0)
                 if button2.check(pos):
                     if passed_levels > 0:
-                        play()
+                        play(1)
                 if button3.check(pos):
                     if passed_levels > 1:
-                        play()
+                        play(2)
                 if button4.check(pos):
                     if passed_levels > 2:
-                        play()
+                        play(3)
                 if button5.check(pos):
                     if passed_levels > 3:
-                        play()
+                        play(4)
+        pygame.display.flip()
 
+
+def first_open():
+    pygame.display.set_caption("Информационное окно")
+    running = True
+    while running:
+        screen.blit(pygame.image.load("data\\fon_2.jpg"), (0, 0))
+        font = pygame.font.Font(None, 50)
+        text1 = font.render('Добро пожаловать в нашу игру "Арканоид!"', True, (255, 255, 255))
+        screen.blit(text1, (25, 100))
+        text2 = font.render('Управлять платформой можно с помощью ', True, (255, 255, 255))
+        screen.blit(text2, (35, 200))
+        text3 = font.render('клавиш "A" и "D, а также с помощью мышки', True, (255, 255, 255))
+        screen.blit(text3, (25, 300))
+        text4 = font.render('Нажимай "ОК" и начинай играть!', True, (255, 255, 255))
+        screen.blit(text4, (130, 450))
+        ok_b = Button("ОК", pygame.font.Font(None, 75), (400, 550), "white", "green")
+        pos = pygame.mouse.get_pos()
+        ok_b.change(pos)
+        screen.blit(ok_b.result_text, ok_b.text_of_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if ok_b.check(pos):
+                    main_menu()
+                    running = False
         pygame.display.flip()
 
 
@@ -233,7 +251,7 @@ def main_menu():
     pygame.display.set_caption("Главное меню")
     running = True
     while running:
-        screen.blit(pygame.image.load("fon_2.jpg"), (0, 0))
+        screen.blit(pygame.image.load("data\\fon_2.jpg"), (0, 0))
         play_b = Button("ИГРАТЬ", pygame.font.Font(None, 75), (200, 300), "white", "green")
         exit_b = Button("ВЫЙТИ", pygame.font.Font(None, 75), (600, 300), "white", "red")
         level_choose_b = Button('ВЫБОР УРОВНЯ', pygame.font.Font(None, 75), (400, 450), 'white', 'blue')
@@ -252,7 +270,7 @@ def main_menu():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_b.check(pos):
-                    play()
+                    play(passed_levels)
                 if exit_b.check(pos):
                     running = False
                 if level_choose_b.check(pos):
@@ -264,11 +282,15 @@ def main_menu():
 
 # создаём шарик, платформу и кирпичи
 paddle = pygame.sprite.Group()
-ball = Ball(7, 400, 280)
-paddle.add(Paddle(350, 510, 100, 10, (255, 255, 255)))
-bricks = pygame.sprite.Group()
-create_bricks()
+ball = Ball(10, 400, 280)
+paddle.add(Paddle(350, 510, 150, 30))
 # Добавляем спрайты
-all_sprites.add(ball, bricks, paddle)
+passed_levels = 2
+last_level = 0
 clock = pygame.time.Clock()
-main_menu()
+if not os.path.exists('data\\user.txt'):
+    file = open('data\\user.txt', 'w')
+    file.write('logged')
+    file.close()
+else:
+    main_menu()
