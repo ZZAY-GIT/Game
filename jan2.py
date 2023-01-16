@@ -136,8 +136,6 @@ class Button:
 
 
 def play():
-    global coll
-
     pygame.display.set_caption("Арканоид")
     running = True
     moving = False
