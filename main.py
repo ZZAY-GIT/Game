@@ -3,18 +3,18 @@ import sys
 import pygame
 import os
 
-
 pygame.init()
 pygame.mixer.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 all_sprites = pygame.sprite.Group()
 collision_sound = pygame.mixer.Sound("data\\123.mp3")
+gameOverSound = pygame.mixer.Sound('data\\gameover.mp3')
 
 
 # класс мячика
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, radius, x, y):
+    def __init__(self, radius, x, y, score):
         super().__init__(all_sprites)
         self.radius = radius
         self.image = pygame.image.load('data\\ball.png').convert_alpha()
@@ -22,6 +22,7 @@ class Ball(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image, (20, 20))
         self.rect = pygame.Rect(x, y, 2 * radius, 2 * radius)
         self.x = x
+        self.score = score
         self.y = y
         self.radius = radius
         self.vx = 8
@@ -40,11 +41,7 @@ class Ball(pygame.sprite.Sprite):
                 paddle_center = i.rect.x + (i.rect.width / 2)
                 ball_center = self.rect.x + self.radius / 2
                 offset = (ball_center - paddle_center) / (i.rect.width / 2)
-
                 self.vx = offset * 5
-        if pygame.sprite.spritecollide(self, bricks, True):
-            collision_sound.play()
-            self.vy = -self.vy
 
 
 # класс платформы
@@ -52,7 +49,7 @@ class Paddle(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height):
         super().__init__(all_sprites)
         self.image = pygame.image.load('data\\paddle.png').convert_alpha()
-        self.image = pygame.transform.scale(self.image, (150, 30))
+        self.image = pygame.transform.scale(self.image, (120, 30))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -87,7 +84,7 @@ def create_bricks(level, bricks):
     bricks_coords = []
     x_coords = list(range(50, 750, 50))
     y_coords = list(range(50, 170, 30))
-    for i in range(31 + (level + 1) * 5):
+    for i in range(1):  #range(31 + (level + 1) * 5):
         x_pos = random.choice(x_coords)
         y_pos = random.choice(y_coords)
         while (x_pos, y_pos) in bricks_coords:
@@ -121,18 +118,50 @@ class Button:
             self.result_text = self.font.render(self.text, True, self.color)
 
 
+def restart_menu():
+    pygame.display.set_caption("Вы проиграли!")
+    running = True
+    while running:
+        screen.blit(pygame.image.load("data\\fon_2.jpg"), (0, 0))
+        font = pygame.font.Font(None, 100)
+        text1 = font.render('Вы проиграли!', True, (220, 100, 100))
+        screen.blit(text1, (150, 200))
+        pos = pygame.mouse.get_pos()
+        restart_b = Button("Перезапустить", pygame.font.Font(None, 75), (600, 550), "white", "green")
+        restart_b.change(pos)
+        screen.blit(restart_b.result_text, restart_b.text_of_rect)
+        main_menu_b = Button("Главное меню", pygame.font.Font(None, 75), (200, 550), "white", "green")
+        main_menu_b.change(pos)
+        screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if restart_b.check(pos):
+                    play(current_level)
+                    running = False
+                if main_menu_b.check(pos):
+                    main_menu()
+                    running = False
+        pygame.display.flip()
+
+
 def play(level):
+    global score
     pygame.display.set_caption("Арканоид")
     running = True
     moving = False
     bricks = pygame.sprite.Group()
     create_bricks(level, bricks)
     all_sprites.add(ball, bricks, paddle)
+
     while running:
         screen.blit(pygame.image.load("data\\fon_3.jpg"), (0, 0))
-        font = pygame.font.Font(None, 50)
-        text1 = font.render('', True, (255, 255, 255))
-        screen.blit(text1, (25, 100))
+        font = pygame.font.Font(None, 40)
+        text1 = font.render(f'Уровень: {current_level + 1}', True, (255, 255, 255))
+        screen.blit(text1, (0, 0))
+        score_text = font.render(f'Счёт: {score}', True, (255, 255, 255))
+        screen.blit(score_text, (650, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -142,7 +171,33 @@ def play(level):
                 moving = False
 
         all_sprites.draw(screen)
+
         ball.update(bricks)
+        if pygame.sprite.spritecollide(ball, bricks, True):
+            collision_sound.play()
+            score += 1
+            with open('data\\user.txt', 'r+') as file:
+                file.write('logged\n')
+                file.write(f'{score}\n')
+                file.write(f'{current_level}\n')
+                file.write(f'{passed_levels}\n')
+
+            ball.vy = -ball.vy
+
+        if ball.rect.y + 10 >= 520:
+            gameOverSound.play()
+            all_sprites.remove(bricks)
+            bricks.clear(screen, screen)
+            ball.rect.y, ball.rect.x = 400, 280
+            ball.vx, ball.vy = 8, -8
+            score = 0
+            with open('data\\user.txt', 'r+') as file:
+                file.write('logged\n')
+                file.write(f'{score}\n')
+                file.write(f'{current_level}\n')
+                file.write(f'{passed_levels}\n')
+            running = False
+            restart_menu()
         # передвижение платформы клавишами
 
         keys = pygame.key.get_pressed()
@@ -150,7 +205,9 @@ def play(level):
             paddle.update('left')
         if keys[pygame.K_RIGHT]:
             paddle.update('right')
-
+        if len(bricks) == 0:
+            running = False
+            win_menu()
         # передвижение платформы мышью
         if moving:
             for i in paddle:
@@ -161,8 +218,41 @@ def play(level):
     sys.exit()
 
 
+def win_menu():
+    global current_level
+    global passed_levels
+    pygame.display.set_caption("Победа!!!")
+    running = True
+    while running:
+        screen.blit(pygame.image.load("data\\fon_2.jpg"), (0, 0))
+        font = pygame.font.Font(None, 100)
+        text1 = font.render('Вы победили!!!', True, 'green')
+        screen.blit(text1, (150, 200))
+        pos = pygame.mouse.get_pos()
+        next_lvl_b = Button("Следующий уровень", pygame.font.Font(None, 50), (600, 550), "white", "green")
+        next_lvl_b.change(pos)
+        screen.blit(next_lvl_b.result_text, next_lvl_b.text_of_rect)
+        main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
+        main_menu_b.change(pos)
+        screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if main_menu_b.check(pos):
+                    main_menu()
+                    running = False
+                if next_lvl_b.check(pos):
+                    current_level += 1
+                    passed_levels += 1
+                    play(current_level)
+                    running = False
+        pygame.display.flip()
+
+
 def level_select():
     global passed_levels
+    global current_level
     pygame.display.set_caption("Выбор уровня")
     running = True
     buttons = ['Уровень 1', 'Уровень 2', 'Уровень 3', 'Уровень 4', 'Уровень 5']
@@ -204,18 +294,23 @@ def level_select():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button1.check(pos):
                     play(0)
+                    current_level = 0
                 if button2.check(pos):
                     if passed_levels > 0:
                         play(1)
+                        current_level = 1
                 if button3.check(pos):
                     if passed_levels > 1:
                         play(2)
+                        current_level = 2
                 if button4.check(pos):
                     if passed_levels > 2:
                         play(3)
+                        current_level = 3
                 if button5.check(pos):
                     if passed_levels > 3:
                         play(4)
+                        current_level = 4
         pygame.display.flip()
 
 
@@ -229,8 +324,8 @@ def first_open():
         screen.blit(text1, (25, 100))
         text2 = font.render('Управлять платформой можно с помощью ', True, (255, 255, 255))
         screen.blit(text2, (35, 200))
-        text3 = font.render('клавиш "A" и "D, а также с помощью мышки', True, (255, 255, 255))
-        screen.blit(text3, (25, 300))
+        text3 = font.render('стрелочек, а также с помощью мышки', True, (255, 255, 255))
+        screen.blit(text3, (75, 300))
         text4 = font.render('Нажимай "ОК" и начинай играть!', True, (255, 255, 255))
         screen.blit(text4, (130, 450))
         ok_b = Button("ОК", pygame.font.Font(None, 75), (400, 550), "white", "green")
@@ -281,16 +376,30 @@ def main_menu():
 
 
 # создаём шарик, платформу и кирпичи
+
 paddle = pygame.sprite.Group()
-ball = Ball(10, 400, 280)
-paddle.add(Paddle(350, 510, 150, 30))
+paddle.add(Paddle(350, 510, 100, 30))
 # Добавляем спрайты
-passed_levels = 2
-last_level = 0
+
 clock = pygame.time.Clock()
 if not os.path.exists('data\\user.txt'):
     file = open('data\\user.txt', 'w')
-    file.write('logged')
+    file.write('logged\n')
+    file.write('0\n')
+    file.write('0\n')
+    file.write('0\n')
     file.close()
+    score = 0
+    current_level = 0
+    passed_levels = 0
+    ball = Ball(10, 400, 280, score)
+    first_open()
 else:
+    file = open('data\\user.txt', 'r')
+    lines = file.readlines()
+    score = int(lines[1].strip())
+    current_level = int(lines[2].strip())
+    passed_levels = int(lines[3].strip())
+    file.close()
+    ball = Ball(10, 400, 280, score)
     main_menu()
