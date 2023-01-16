@@ -1,5 +1,15 @@
+import random
 import sys
 import pygame
+
+passed_levels = 2
+enter_count = 0
+pygame.init()
+pygame.mixer.init()
+size = width, height = 800, 600
+screen = pygame.display.set_mode(size)
+all_sprites = pygame.sprite.Group()
+collision_sound = pygame.mixer.Sound("123.mp3")
 
 
 # класс мячика
@@ -15,8 +25,8 @@ class Ball(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.radius = radius
-        self.vx = 4
-        self.vy = -4
+        self.vx = 8
+        self.vy = -8
 
     def update(self):
         if 0 <= self.rect.x + self.vx <= width - self.radius:
@@ -86,6 +96,21 @@ def create_bricks():
         y_pos += 25
 
 
+def generate_level(level_number):
+    bricks = []
+    if level_number == 1:
+        for i in range(10):
+            x = random.randint(0, 500)
+            y = random.randint(0, 100)
+            bricks.append(Brick(x, y))
+    elif level_number == 2:
+        for i in range(20):
+            x = random.randint(0, 500)
+            y = random.randint(0, 200)
+            bricks.append(Brick(x, y))
+    return bricks
+
+
 class Button:
     def __init__(self, text, font, pos, color, changed_color):
         self.text = text
@@ -110,24 +135,9 @@ class Button:
             self.result_text = self.font.render(self.text, True, self.color)
 
 
-pygame.init()
-pygame.mixer.init()
-size = width, height = 800, 600
-screen = pygame.display.set_mode(size)
-collision_sound = pygame.mixer.Sound("123.mp3")
-# создаём шарик, платформу и кирпичи
-all_sprites = pygame.sprite.Group()
-paddle = pygame.sprite.Group()
-ball = Ball(7, 400, 280)
-paddle.add(Paddle(350, 510, 100, 10, (255, 255, 255)))
-bricks = pygame.sprite.Group()
-create_bricks()
-# Добавляем спрайты
-all_sprites.add(ball, bricks, paddle)
-clock = pygame.time.Clock()
-
-
 def play():
+    global coll
+
     pygame.display.set_caption("Арканоид")
     running = True
     moving = False
@@ -161,14 +171,75 @@ def play():
     sys.exit()
 
 
+def level_select():
+    global passed_levels
+    pygame.display.set_caption("Выбор уровня")
+    running = True
+    buttons = ['Уровень 1', 'Уровень 2', 'Уровень 3', 'Уровень 4', 'Уровень 5']
+    while running:
+        color = 'white'
+        color_changed = 'green'
+
+        pos = pygame.mouse.get_pos()
+        screen.blit(pygame.image.load('fon_2.jpg'), (0, 0))
+        button1 = Button(buttons[0], pygame.font.Font(None, 50), (200 + 200 * 0, 200), color, color_changed)
+        button1.change(pos)
+        screen.blit(button1.result_text, button1.text_of_rect)
+        if passed_levels == 0:
+            color = 'red'
+            color_changed = color
+        button2 = Button(buttons[1], pygame.font.Font(None, 50), (200 + 200 * 1, 200), color, color_changed)
+        button2.change(pos)
+        screen.blit(button2.result_text, button2.text_of_rect)
+        if passed_levels == 1:
+            color = 'red'
+            color_changed = color
+        button3 = Button(buttons[2], pygame.font.Font(None, 50), (200 + 200 * 2, 200), color, color_changed)
+        button3.change(pos)
+        screen.blit(button3.result_text, button3.text_of_rect)
+        if passed_levels == 2:
+            color = 'red'
+            color_changed = color
+        button4 = Button(buttons[3], pygame.font.Font(None, 50), (300 + 200 * 0, 300), color, color_changed)
+        button4.change(pos)
+        screen.blit(button4.result_text, button4.text_of_rect)
+        if passed_levels == 3:
+            color = 'red'
+            color_changed = color
+        button5 = Button(buttons[4], pygame.font.Font(None, 50), (300 + 200 * 1, 300), color, color_changed)
+        button5.change(pos)
+        screen.blit(button5.result_text, button5.text_of_rect)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if button1.check(pos):
+                    play()
+                if button2.check(pos):
+                    if passed_levels > 0:
+                        play()
+                if button3.check(pos):
+                    if passed_levels > 1:
+                        play()
+                if button4.check(pos):
+                    if passed_levels > 2:
+                        play()
+                if button5.check(pos):
+                    if passed_levels > 3:
+                        play()
+
+        pygame.display.flip()
+
+
 def main_menu():
-    pygame.display.set_caption("Меню")
+    pygame.display.set_caption("Главное меню")
     running = True
     while running:
         screen.blit(pygame.image.load("fon_2.jpg"), (0, 0))
         play_b = Button("ИГРАТЬ", pygame.font.Font(None, 75), (200, 300), "white", "green")
         exit_b = Button("ВЫЙТИ", pygame.font.Font(None, 75), (600, 300), "white", "red")
-        text_of_menu = pygame.font.Font(None, 100).render("МЕНЮ", True, "white")
+        level_choose_b = Button('ВЫБОР УРОВНЯ', pygame.font.Font(None, 75), (400, 450), 'white', 'blue')
+        text_of_menu = pygame.font.Font(None, 100).render("АРКАНОИД", True, "white")
         rect_of_menu = text_of_menu.get_rect(center=(400, 100))
         screen.blit(text_of_menu, rect_of_menu)
         pos = pygame.mouse.get_pos()
@@ -176,6 +247,8 @@ def main_menu():
         screen.blit(play_b.result_text, play_b.text_of_rect)
         exit_b.change(pos)
         screen.blit(exit_b.result_text, exit_b.text_of_rect)
+        level_choose_b.change(pos)
+        screen.blit(level_choose_b.result_text, level_choose_b.text_of_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -184,8 +257,20 @@ def main_menu():
                     play()
                 if exit_b.check(pos):
                     running = False
+                if level_choose_b.check(pos):
+                    level_select()
         pygame.display.flip()
     pygame.quit()
     sys.exit()
 
+
+# создаём шарик, платформу и кирпичи
+paddle = pygame.sprite.Group()
+ball = Ball(7, 400, 280)
+paddle.add(Paddle(350, 510, 100, 10, (255, 255, 255)))
+bricks = pygame.sprite.Group()
+create_bricks()
+# Добавляем спрайты
+all_sprites.add(ball, bricks, paddle)
+clock = pygame.time.Clock()
 main_menu()
