@@ -8,8 +8,9 @@ pygame.mixer.init()
 size = width, height = 800, 600
 screen = pygame.display.set_mode(size)
 all_sprites = pygame.sprite.Group()
-collision_sound = pygame.mixer.Sound("data\\123.mp3")
+collision_sound = pygame.mixer.Sound("data\\bomp.mp3")
 gameOverSound = pygame.mixer.Sound('data\\gameover.mp3')
+winSound = pygame.mixer.Sound('data\\win.mp3')
 
 
 # класс мячика
@@ -84,7 +85,7 @@ def create_bricks(level, bricks):
     bricks_coords = []
     x_coords = list(range(50, 750, 50))
     y_coords = list(range(50, 170, 30))
-    for i in range(1):  #range(31 + (level + 1) * 5):
+    for i in range(31 + (level + 1) * 5):
         x_pos = random.choice(x_coords)
         y_pos = random.choice(y_coords)
         while (x_pos, y_pos) in bricks_coords:
@@ -181,7 +182,6 @@ def play(level):
                 file.write(f'{score}\n')
                 file.write(f'{current_level}\n')
                 file.write(f'{passed_levels}\n')
-
             ball.vy = -ball.vy
 
         if ball.rect.y + 10 >= 520:
@@ -206,6 +206,7 @@ def play(level):
         if keys[pygame.K_RIGHT]:
             paddle.update('right')
         if len(bricks) == 0:
+            winSound.play()
             running = False
             win_menu()
         # передвижение платформы мышью
@@ -232,9 +233,10 @@ def win_menu():
         next_lvl_b = Button("Следующий уровень", pygame.font.Font(None, 50), (600, 550), "white", "green")
         next_lvl_b.change(pos)
         screen.blit(next_lvl_b.result_text, next_lvl_b.text_of_rect)
-        main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
-        main_menu_b.change(pos)
-        screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
+        if current_level != 5:
+            main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
+            main_menu_b.change(pos)
+            screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
