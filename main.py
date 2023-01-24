@@ -242,6 +242,8 @@ def win_menu():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if main_menu_b.check(pos):
+                    current_level += 1
+                    passed_levels += 1
                     main_menu()
                     running = False
                 if next_lvl_b.check(pos):
