@@ -170,7 +170,8 @@ def play(level):
                 moving = True
             if event.type == pygame.MOUSEBUTTONUP:
                 moving = False
-
+            if event.type == pygame.KEYDOWN and event.key == 27:
+                pause_game()
         all_sprites.draw(screen)
 
         ball.update(bricks)
@@ -358,6 +359,41 @@ def first_open():
         pygame.display.flip()
 
 
+def pause_game():
+    global paused
+    paused = True
+    pause_overlay = pygame.Surface((800, 600))
+    pause_overlay.set_alpha(128)
+    pause_overlay.fill((0, 0, 0))
+    font = pygame.font.Font(None, 40)
+    text1 = font.render(f'Уровень: {current_level + 1}', True, (255, 255, 255))
+    score_text = font.render(f'Счёт: {score}', True, (255, 255, 255))
+    font = pygame.font.Font(None, 50)
+    message = font.render("Пауза", True, (255, 255, 255))
+    message_rect = message.get_rect()
+    message_rect.center = (400, 300)
+    font = pygame.font.Font(None, 20)
+    message1 = font.render("Чтобы продолжить нажмите на любую кнопку", True, (255, 255, 255))
+    message_rect1 = message1.get_rect()
+    message_rect1.center = (400, 330)
+    while paused:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                paused = False
+
+        screen.blit(pygame.image.load("data\\fon_3.jpg"), (0, 0))
+        all_sprites.draw(screen)
+        screen.blit(score_text, (650, 0))
+        screen.blit(text1, (0, 0))
+        screen.blit(pause_overlay, (0, 0))
+        screen.blit(message, message_rect)
+        screen.blit(message1, message_rect1)
+        pygame.display.flip()
+
+
 def main_menu():
     pygame.display.set_caption("Главное меню")
     running = True
@@ -395,6 +431,7 @@ def main_menu():
 
 paddle = pygame.sprite.Group()
 paddle.add(Paddle(350, 510, 100, 30))
+paused = False
 # Добавляем спрайты
 
 clock = pygame.time.Clock()
