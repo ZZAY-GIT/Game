@@ -120,13 +120,18 @@ class Button:
 
 
 def restart_menu():
+    global score
     pygame.display.set_caption("Вы проиграли!")
     running = True
     while running:
         screen.blit(pygame.image.load("data\\fon_2.jpg"), (0, 0))
-        font = pygame.font.Font(None, 100)
+        font = pygame.font.Font(None, 75)
+        text_high_score = font.render(f'Лучший счёт: {high_score}', True, (255, 255, 255))
+        screen.blit(text_high_score, (200, 350))
+        text_score = font.render(f'Текущий счёт: {score}', True, (255, 255, 255))
+        screen.blit(text_score, (200, 300))
         text1 = font.render('Вы проиграли!', True, (220, 100, 100))
-        screen.blit(text1, (150, 200))
+        screen.blit(text1, (200, 100))
         pos = pygame.mouse.get_pos()
         restart_b = Button("Перезапустить", pygame.font.Font(None, 75), (600, 550), "white", "green")
         restart_b.change(pos)
@@ -139,9 +144,11 @@ def restart_menu():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if restart_b.check(pos):
+                    score = 0
                     play(current_level)
                     running = False
                 if main_menu_b.check(pos):
+                    score = 0
                     main_menu()
                     running = False
         pygame.display.flip()
@@ -149,6 +156,7 @@ def restart_menu():
 
 def play(level):
     global score
+    global high_score
     pygame.display.set_caption("Арканоид")
     running = True
     moving = False
@@ -173,7 +181,8 @@ def play(level):
             if event.type == pygame.KEYDOWN and event.key == 27:
                 pause_game()
         all_sprites.draw(screen)
-
+        if score > high_score:
+            high_score = score
         ball.update(bricks)
         if pygame.sprite.spritecollide(ball, bricks, True):
             collision_sound.play()
@@ -183,6 +192,7 @@ def play(level):
                 file.write(f'{score}\n')
                 file.write(f'{current_level}\n')
                 file.write(f'{passed_levels}\n')
+                file.write(f'{high_score}\n')
             ball.vy = -ball.vy
 
         if ball.rect.y + 10 >= 520:
@@ -191,12 +201,12 @@ def play(level):
             bricks.clear(screen, screen)
             ball.rect.y, ball.rect.x = 400, 280
             ball.vx, ball.vy = 8, -8
-            score = 0
             with open('data\\user.txt', 'r+') as file:
                 file.write('logged\n')
-                file.write(f'{score}\n')
+                file.write(f'0\n')
                 file.write(f'{current_level}\n')
                 file.write(f'{passed_levels}\n')
+                file.write(f'{high_score}\n')
             running = False
             restart_menu()
         # передвижение платформы клавишами
@@ -441,8 +451,10 @@ if not os.path.exists('data\\user.txt'):
     file.write('0\n')
     file.write('0\n')
     file.write('0\n')
+    file.write('0\n')
     file.close()
     score = 0
+    high_score = 0
     current_level = 0
     passed_levels = 0
     ball = Ball(10, 400, 280, score)
@@ -453,6 +465,7 @@ else:
     score = int(lines[1].strip())
     current_level = int(lines[2].strip())
     passed_levels = int(lines[3].strip())
+    high_score = int(lines[4].strip())
     file.close()
     ball = Ball(10, 400, 280, score)
     main_menu()
