@@ -163,6 +163,7 @@ def play(level):
     bricks = pygame.sprite.Group()
     create_bricks(level, bricks)
     all_sprites.add(ball, bricks, paddle)
+    count_of_bricks = len(bricks)
 
     while running:
         screen.blit(pygame.image.load("data\\fon_3.jpg"), (0, 0))
@@ -186,7 +187,7 @@ def play(level):
         ball.update(bricks)
         if pygame.sprite.spritecollide(ball, bricks, True):
             collision_sound.play()
-            score += 1
+            score = count_of_bricks - len(bricks)
             with open('data\\user.txt', 'r+') as file:
                 file.write('logged\n')
                 file.write(f'{score}\n')
@@ -244,7 +245,7 @@ def win_menu():
         next_lvl_b = Button("Следующий уровень", pygame.font.Font(None, 50), (600, 550), "white", "green")
         next_lvl_b.change(pos)
         screen.blit(next_lvl_b.result_text, next_lvl_b.text_of_rect)
-        if current_level != 5:
+        if current_level == 5:
             main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
             main_menu_b.change(pos)
             screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
