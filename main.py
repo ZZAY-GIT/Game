@@ -34,7 +34,7 @@ class Ball(pygame.sprite.Sprite):
             self.rect = self.rect.move(self.vx, self.vy)
         else:
             self.vx = -self.vx
-        if 0 >= self.rect.y - self.radius:
+        if not (0 <= self.rect.y + self.vy <= height - self.radius):
             self.vy = -self.vy
         if pygame.sprite.spritecollideany(self, paddle):
             self.vy = -self.vy
@@ -64,6 +64,9 @@ class Paddle(pygame.sprite.Sprite):
         else:
             if self.rect.x - 10 >= 0:
                 self.rect = self.rect.move(-10, 0)
+
+    def get_pos(self):
+        return (self.rect.x, self.rect.y)
 
 
 # класс кирпича
