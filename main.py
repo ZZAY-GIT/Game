@@ -88,7 +88,7 @@ def create_bricks(level, bricks):
     bricks_coords = []
     x_coords = list(range(50, 750, 50))
     y_coords = list(range(50, 170, 30))
-    for i in range(31 + (level + 1) * 5):
+    for i in range(1):#range(31 + (level + 1) * 5):
         x_pos = random.choice(x_coords)
         y_pos = random.choice(y_coords)
         while (x_pos, y_pos) in bricks_coords:
@@ -190,7 +190,7 @@ def play(level):
         ball.update(bricks)
         if pygame.sprite.spritecollide(ball, bricks, True):
             collision_sound.play()
-            score = count_of_bricks - len(bricks)
+            score = last_score + (count_of_bricks - len(bricks))
             with open('data\\user.txt', 'r+') as file:
                 file.write('logged\n')
                 file.write(f'{score}\n')
@@ -245,11 +245,15 @@ def win_menu():
         text1 = font.render('Вы победили!!!', True, 'green')
         screen.blit(text1, (150, 200))
         pos = pygame.mouse.get_pos()
-        next_lvl_b = Button("Следующий уровень", pygame.font.Font(None, 50), (600, 550), "white", "green")
-        next_lvl_b.change(pos)
-        screen.blit(next_lvl_b.result_text, next_lvl_b.text_of_rect)
-        if current_level == 5:
+        if current_level != 4:
+            next_lvl_b = Button("Следующий уровень", pygame.font.Font(None, 50), (600, 550), "white", "green")
+            next_lvl_b.change(pos)
+            screen.blit(next_lvl_b.result_text, next_lvl_b.text_of_rect)
             main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (200, 550), "white", "green")
+            main_menu_b.change(pos)
+            screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
+        else:
+            main_menu_b = Button("Главное меню", pygame.font.Font(None, 50), (400, 550), "white", "green")
             main_menu_b.change(pos)
             screen.blit(main_menu_b.result_text, main_menu_b.text_of_rect)
         for event in pygame.event.get():
@@ -467,6 +471,7 @@ else:
     file = open('data\\user.txt', 'r')
     lines = file.readlines()
     score = int(lines[1].strip())
+    last_score = int(lines[1].strip())
     current_level = int(lines[2].strip())
     passed_levels = int(lines[3].strip())
     high_score = int(lines[4].strip())
