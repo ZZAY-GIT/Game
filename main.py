@@ -127,8 +127,7 @@ def create_bricks(level, bricks):
     bricks_coords = []
     x_coords = list(range(50, 750, 50))
     y_coords = list(range(50, 170, 30))
-    # for i in range(31 + (level + 1) * 5):
-    for i in range(1):
+    for i in range(31 + (level + 1) * 5):
         x_pos = random.choice(x_coords)
         y_pos = random.choice(y_coords)
         while (x_pos, y_pos) in bricks_coords:
